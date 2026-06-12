@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1e3a5f">
+<meta name="description" content="Gerador de Fichas Técnicas Profissional — crie, salve e exporte fichas técnicas corporativas.">
+<title>Gerador de Fichas Técnicas</title>
+<link rel="manifest" href="data:application/json,{%22name%22:%22Fichas T%C3%A9cnicas%22,%22short_name%22:%22FichaTec%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22theme_color%22:%22%231e3a5f%22,%22background_color%22:%22%23f1f5f9%22}">
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh;line-height:1.5}
+input,select,textarea,button{font-family:inherit;font-size:inherit}
+textarea{resize:vertical}
+a{color:inherit}
+
+/* ── TOKENS ───────────────────────────────────────────────── */
+:root{
+  --azul:    #1e3a5f;
+  --azul2:   #2563eb;
+  --azul-lt: #eff6ff;
+  --ouro:    #d97706;
+  --verde:   #16a34a;
+  --cinza:   #64748b;
+  --borda:   #e2e8f0;
+  --fundo:   #f1f5f9;
+  --card:    #ffffff;
+  --r:       10px;
+  --sombra:  0 2px 16px rgba(0,0,0,.08);
+  --trans:   .18s ease;
+}
+
+/* ── LAYOUT ───────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;min-height:100vh}
+.header{background:linear-gradient(135deg,#1e3a5f 60%,#2563eb 100%);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.header-icon{width:38px;height:38px;background:#d97706;border-radius:8px;display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.header h1{font-size:1rem;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.header p{font-size:.7rem;color:#93c5fd;letter-spacing:.05em}
+#btn-nova{background:#d97706;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:6px;transition:background var(--trans);white-space:nowrap}
+#btn-nova:hover{background:#b45309}
+
+.main{flex:1;padding:20px;max-width:900px;margin:0 auto;width:100%}
+
+/* ── VIEWS ────────────────────────────────────────────────── */
+.view{display:none}
+.view.active{display:block}
+
+/* ── LISTA ────────────────────────────────────────────────── */
+.busca-wrap{margin-bottom:16px;position:relative}
+.busca-wrap input{width:100%;padding:10px 14px 10px 38px;border:1px solid var(--borda);border-radius:8px;background:#fff;font-size:.9rem;transition:border-color var(--trans)}
+.busca-wrap input:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.busca-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--cinza);font-size:14px;pointer-events:none}
+.contador{font-size:.75rem;color:var(--cinza);margin-bottom:12px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--borda);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color var(--trans),box-shadow var(--trans)}
+.card:hover{border-color:#93c5fd;box-shadow:0 4px 20px rgba(37,99,235,.1)}
+.card-topo{display:flex;align-items:flex-start;gap:12px}
+.card-inicial{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#1e3a5f,#2563eb);display:grid;place-items:center;color:#fff;font-weight:800;font-size:1.1rem;flex-shrink:0}
+.card-inicial img{width:42px;height:42px;object-fit:contain;border-radius:8px;border:1px solid var(--borda);padding:3px}
+.card-nome{font-weight:700;font-size:.95rem;color:#1e293b;line-height:1.3}
+.card-empresa{font-size:.78rem;color:var(--cinza);margin-top:1px}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:600;padding:3px 9px;border-radius:20px;background:#eff6ff;color:#1d4ed8}
+.card-desc{font-size:.78rem;color:#94a3b8;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-acoes{display:flex;gap:6px;border-top:1px solid var(--borda);padding-top:10px;margin-top:2px}
+.btn-ver{flex:1;background:#1e3a5f;color:#fff;border:none;padding:7px;border-radius:7px;cursor:pointer;font-size:.8rem;font-weight:700;transition:background var(--trans)}
+.btn-ver:hover{background:#2563eb}
+.btn-ico{border:1px solid var(--borda);background:#fff;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:.85rem;transition:background var(--trans),color var(--trans)}
+.btn-ico:hover{background:#f8fafc}
+.btn-ico.del:hover{background:#fef2f2;color:#dc2626;border-color:#fca5a5}
+.btn-ico.dup:hover{background:#f0fdf4;color:#16a34a;border-color:#86efac}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 20px;text-align:center;gap:12px}
+.empty-icon{font-size:3rem;opacity:.3}
+.empty h3{font-size:1.1rem;font-weight:700;color:#475569}
+.empty p{font-size:.85rem;color:#94a3b8;max-width:300px}
+.btn-primary{background:#1e3a5f;color:#fff;border:none;padding:11px 24px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.9rem;display:inline-flex;align-items:center;gap:8px;transition:background var(--trans)}
+.btn-primary:hover{background:#2563eb}
+
+/* ── FORMULÁRIO ───────────────────────────────────────────── */
+.form-header{margin-bottom:20px}
+.form-header h2{font-size:1.3rem;font-weight:800;color:#1e293b}
+.form-header p{font-size:.85rem;color:var(--cinza);margin-top:4px}
+.form-card{background:var(--card);border-radius:var(--r);border:1px solid var(--borda);padding:20px;margin-bottom:16px}
+
+.secao-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:10px 14px;background:#1e3a5f;color:#fff;border-radius:8px;margin-bottom:14px;transition:background var(--trans)}
+.secao-header:hover{background:#2563eb}
+.secao-titulo{font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.secao-seta{font-size:12px;transition:transform var(--trans)}
+.secao-seta.aberta{transform:rotate(180deg)}
+.secao-corpo{display:none}
+.secao-corpo.aberta{display:block}
+
+.grid-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.grid-form{grid-template-columns:1fr}}
+.col-2{grid-column:1/-1}
+.campo{display:flex;flex-direction:column;gap:5px}
+.campo label{font-size:.72rem;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:.07em}
+.campo label span{color:#ef4444}
+.campo input,.campo select,.campo textarea{padding:9px 12px;border:1px solid var(--borda);border-radius:7px;background:#fff;color:#1e293b;font-size:.88rem;transition:border-color var(--trans),box-shadow var(--trans)}
+.campo input:focus,.campo select:focus,.campo textarea:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.campo input.erro,.campo select.erro{border-color:#ef4444;background:#fef2f2}
+.campo .msg-erro{font-size:.72rem;color:#ef4444}
+.logo-area{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo-preview{height:54px;object-fit:contain;border-radius:7px;border:1px solid var(--borda);padding:4px;background:#fff}
+.btn-upload{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px dashed var(--borda);border-radius:7px;cursor:pointer;color:var(--cinza);font-size:.82rem;transition:border-color var(--trans),color var(--trans);background:#fff}
+.btn-upload:hover{border-color:#2563eb;color:#2563eb;background:#eff6ff}
+.btn-remover-logo{background:none;border:none;color:#ef4444;cursor:pointer;font-size:.8rem;text-decoration:underline}
+
+.form-acoes{display:flex;gap:10px;padding-top:4px}
+.btn-salvar{flex:1;background:#1e3a5f;color:#fff;border:none;padding:12px;border-radius:8px;font-weight:800;cursor:pointer;font-size:.95rem;transition:background var(--trans)}
+.btn-salvar:hover{background:#2563eb}
+.btn-cancelar{padding:12px 20px;border:1px solid var(--borda);background:#fff;color:var(--cinza);border-radius:8px;cursor:pointer;font-size:.9rem;transition:background var(--trans)}
+.btn-cancelar:hover{background:var(--fundo)}
+
+/* ── VISUALIZAÇÃO ─────────────────────────────────────────── */
+.preview-toolbar{background:#fff;border:1px solid var(--borda);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;box-shadow:var(--sombra)}
+.preview-meta h2{font-size:1rem;font-weight:800;color:#1e293b}
+.preview-meta p{font-size:.78rem;color:var(--cinza)}
+.toolbar-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.btn-pdf{background:#1e3a5f;color:#fff;border:none;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:6px;transition:background var(--trans)}
+.btn-pdf:hover{background:#2563eb}
+.btn-imprimir{background:#fff;border:1px solid var(--borda);color:#475569;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:6px;transition:background var(--trans)}
+.btn-imprimir:hover{background:var(--fundo)}
+.btn-editar-toolbar{background:#fff;border:1px solid var(--borda);color:#475569;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:600;transition:background var(--trans)}
+.btn-editar-toolbar:hover{background:var(--fundo)}
+
+/* ── FICHA (documento A4) ─────────────────────────────────── */
+.ficha-wrapper{background:#94a3b8;padding:20px;border-radius:var(--r);overflow-x:auto}
+.ficha-a4{background:#fff;width:794px;min-height:1122px;padding:48px 52px;box-shadow:0 4px 32px rgba(0,0,0,.25);border-radius:4px;font-family:Arial,sans-serif;color:#1e293b;margin:0 auto}
+
+/* ficha interna */
+.ft-header{border-bottom:3px solid #1e3a5f;padding-bottom:18px;margin-bottom:22px}
+.ft-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.ft-empresa{display:flex;align-items:center;gap:14px}
+.ft-inicial{width:54px;height:54px;background:#1e3a5f;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:22px;font-weight:900;flex-shrink:0}
+.ft-inicial img{width:54px;height:54px;object-fit:contain;border-radius:10px;padding:4px}
+.ft-fab-label{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px}
+.ft-fab-nome{font-size:18px;font-weight:900;color:#1e3a5f;line-height:1.2}
+.ft-fab-local{font-size:10px;color:#64748b;margin-top:2px}
+.ft-doc-info{text-align:right;flex-shrink:0}
+.ft-badge{display:inline-block;background:#1e3a5f;color:#fff;padding:4px 14px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.ft-doc-meta{font-size:9px;color:#94a3b8;line-height:1.8}
+.ft-doc-ref{font-family:monospace;font-size:9px;color:#94a3b8}
+
+.ft-banner{margin-top:16px;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ft-categoria{font-size:9px;font-weight:700;color:#93c5fd;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px}
+.ft-produto-nome{font-size:20px;font-weight:900;color:#fff;line-height:1.2}
+.ft-validade-label{font-size:8px;color:#93c5fd;text-transform:uppercase;letter-spacing:.1em;text-align:right}
+.ft-validade-val{font-size:12px;font-weight:700;color:#fff;text-align:right;margin-top:2px}
+
+.ft-secao{margin-bottom:18px}
+.ft-secao-titulo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ft-acento{width:4px;height:16px;background:#d97706;border-radius:2px;flex-shrink:0}
+.ft-secao-label{font-size:9px;font-weight:800;color:#1e3a5f;text-transform:uppercase;letter-spacing:.14em}
+.ft-secao-linha{flex:1;height:1px;background:#e2e8f0}
+
+.ft-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px}
+.ft-box-verde{background:#f0fdf4;border-color:#bbf7d0}
+.ft-box-azul{background:#eff6ff;border-color:#bfdbfe}
+.ft-texto{font-size:11.5px;color:#334155;line-height:1.6}
+
+.ft-table{width:100%;border-collapse:collapse}
+.ft-table td{padding:6px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.ft-table td:first-child{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;width:120px;white-space:nowrap}
+.ft-table tr:last-child td{border-bottom:none}
+
+.ft-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+
+.ft-rodape{margin-top:24px;border-top:3px solid #1e3a5f;padding-top:14px}
+.ft-rodape-box{background:#1e3a5f;border-radius:10px;padding:16px 20px}
+.ft-rodape-titulo{font-size:8px;font-weight:800;color:#93c5fd;text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px}
+.ft-rodape-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px}
+.ft-rodape-item{display:flex;gap:6px;align-items:baseline}
+.ft-rodape-chave{font-size:9px;color:#93c5fd;min-width:68px;flex-shrink:0}
+.ft-rodape-valor{font-size:10px;font-weight:700;color:#fff}
+.ft-assinatura{border-top:1px solid #334155;margin-top:10px;padding-top:8px;display:flex;justify-content:space-between}
+.ft-assinatura span{font-size:8px;color:#475569}
+
+/* ── MODAL CONFIRMAR ──────────────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;place-items:center;z-index:200;padding:16px}
+.overlay.ativo{display:grid}
+.modal{background:#fff;border-radius:12px;padding:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h3{font-size:1rem;font-weight:800;margin-bottom:8px}
+.modal p{font-size:.88rem;color:var(--cinza);margin-bottom:20px}
+.modal-acoes{display:flex;gap:10px}
+.btn-confirm-del{flex:1;background:#dc2626;color:#fff;border:none;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.9rem}
+.btn-confirm-del:hover{background:#b91c1c}
+.btn-confirm-cancel{flex:1;background:#fff;border:1px solid var(--borda);color:var(--cinza);padding:10px;border-radius:8px;cursor:pointer;font-size:.9rem}
+
+/* ── TOAST ────────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:12px 18px;border-radius:8px;font-size:.85rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:300;transform:translateY(80px);opacity:0;transition:transform .3s ease,opacity .3s ease;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ── SPINNER PDF ──────────────────────────────────────────── */
+.spinner-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:none;place-items:center;z-index:400;flex-direction:column;gap:12px}
+.spinner-overlay.ativo{display:flex}
+.spinner{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#1e3a5f;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── PRINT ────────────────────────────────────────────────── */
+@media print{
+  body>*{display:none!important}
+  .ficha-a4{display:block!important;box-shadow:none!important;padding:20px!important}
+  .ficha-a4,#print-target{display:block!important;visibility:visible!important}
+}
+
+/* ── MOBILE ───────────────────────────────────────────────── */
+@media(max-width:500px){
+  .main{padding:12px}
+  .ficha-wrapper{padding:10px 6px}
+  .ficha-a4{width:100%;min-height:auto;padding:24px 18px}
+  .ft-topo{flex-direction:column;gap:10px}
+  .ft-doc-info{text-align:left}
+  .ft-banner{flex-direction:column;align-items:flex-start}
+  .ft-grid-2{grid-template-columns:1fr}
+  .ft-rodape-grid{grid-template-columns:1fr}
+  .grid{grid-template-columns:1fr}
+  .toolbar-acoes{width:100%}
+  .toolbar-acoes button{flex:1;justify-content:center}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="header-icon">📋</div>
+      <div>
+        <h1>Gerador de Fichas Técnicas</h1>
+        <p>DOCUMENTAÇÃO TÉCNICA PROFISSIONAL</p>
+      </div>
+    </div>
+    <button id="btn-nova" onclick="irParaFormulario()">＋ Nova Ficha</button>
+  </header>
+
+  <main class="main">
+
+    <!-- VIEW: LISTA -->
+    <div id="view-lista" class="view active">
+      <div class="busca-wrap">
+        <span class="busca-icon">🔍</span>
+        <input type="text" id="campo-busca" placeholder="Buscar por produto, empresa ou categoria..." oninput="renderLista()">
+      </div>
+      <p class="contador" id="contador-text"></p>
+      <div class="grid" id="grid-fichas"></div>
+      <div class="empty" id="empty-state" style="display:none">
+        <div class="empty-icon">📄</div>
+        <h3>Nenhuma ficha criada ainda</h3>
+        <p>Crie sua primeira ficha técnica profissional com todas as informações do produto e empresa.</p>
+        <button class="btn-primary" onclick="irParaFormulario()">＋ Criar Primeira Ficha</button>
+      </div>
+    </div>
+
+    <!-- VIEW: FORMULÁRIO -->
+    <div id="view-form" class="view">
+      <div class="form-header">
+        <h2 id="form-titulo">＋ Nova Ficha Técnica</h2>
+        <p>Preencha os campos abaixo. Campos com <span style="color:#ef4444">*</span> são obrigatórios.</p>
+      </div>
+      <div class="form-card">
+
+        <!-- PRODUTO -->
+        <div class="secao-header" onclick="toggleSecao('produto')">
+          <span class="secao-titulo">📋 Informações do Produto</span>
+          <span class="secao-seta aberta" id="seta-produto">▾</span>
+        </div>
+        <div class="secao-corpo aberta" id="corpo-produto">
+          <div class="grid-form">
+            <div class="campo">
+              <label>Nome do Produto <span>*</span></label>
+              <input type="text" id="nomeProduto" placeholder="Ex: Detergente Industrial XP-500">
+              <span class="msg-erro" id="erro-nomeProduto"></span>
+            </div>
+            <div class="campo">
+              <label>Categoria <span>*</span></label>
+              <select id="categoria">
+                <option value="">Selecione uma categoria</option>
+                <option>Adesivo</option><option>Biocida</option><option>Cosmético</option>
+                <option>Detergente</option><option>Fertilizante</option><option>Impermeabilizante</option>
+                <option>Lubrificante</option><option>Pintura e Revestimento</option>
+                <option>Produto de Limpeza</option><option>Produto Químico Industrial</option>
+                <option>Saneante</option><option>Selante</option><option>Solvente</option>
+                <option>Suplemento</option><option>Outro</option>
+              </select>
+              <span class="msg-erro" id="erro-categoria"></span>
+            </div>
+            <div class="campo col-2">
+              <label>Descrição</label>
+              <textarea id="descricao" rows="3" placeholder="Descrição geral do produto..."></textarea>
+            </div>
+            <div class="campo">
+              <label>Composição</label>
+              <textarea id="composicao" rows="3" placeholder="Ingredientes ativos, concentrações..."></textarea>
+            </div>
+            <div class="campo">
+              <label>Aplicação</label>
+              <textarea id="aplicacao" rows="3" placeholder="Indicações de uso e aplicações..."></textarea>
+            </div>
+            <div class="campo">
+              <label>Benefícios</label>
+              <textarea id="beneficios" rows="3" placeholder="Principais vantagens e benefícios..."></textarea>
+            </div>
+            <div class="campo">
+              <label>Modo de Uso</label>
+              <textarea id="modoDeUso" rows="3" placeholder="Instruções detalhadas de utilização..."></textarea>
+            </div>
+            <div class="campo">
+              <label>Armazenamento</label>
+              <input type="text" id="armazenamento" placeholder="Ex: Local seco, temperatura ambiente">
+            </div>
+            <div class="campo">
+              <label>Validade</label>
+              <input type="text" id="validade" placeholder="Ex: 24 meses a partir da fabricação">
+            </div>
+          </div>
+        </div>
+
+        <!-- FÍSICO-QUÍMICAS -->
+        <div class="secao-header" onclick="toggleSecao('fisquim')" style="margin-top:10px">
+          <span class="secao-titulo">⚗️ Características Físico-Químicas</span>
+          <span class="secao-seta aberta" id="seta-fisquim">▾</span>
+        </div>
+        <div class="secao-corpo aberta" id="corpo-fisquim">
+          <div class="grid-form">
+            <div class="campo"><label>Cor</label><input type="text" id="cor" placeholder="Ex: Amarelo claro"></div>
+            <div class="campo"><label>Odor</label><input type="text" id="odor" placeholder="Ex: Característico, suave"></div>
+            <div class="campo"><label>Aparência</label><input type="text" id="aparencia" placeholder="Ex: Líquido viscoso"></div>
+            <div class="campo"><label>pH</label><input type="text" id="ph" placeholder="Ex: 7,0 ± 0,5"></div>
+            <div class="campo"><label>Densidade (g/mL)</label><input type="text" id="densidade" placeholder="Ex: 1,02 g/mL"></div>
+            <div class="campo"><label>Solubilidade</label><input type="text" id="solubilidade" placeholder="Ex: Solúvel em água"></div>
+          </div>
+        </div>
+
+        <!-- EMPRESA -->
+        <div class="secao-header" onclick="toggleSecao('empresa')" style="margin-top:10px">
+          <span class="secao-titulo">🏢 Dados da Empresa / Fabricante</span>
+          <span class="secao-seta aberta" id="seta-empresa">▾</span>
+        </div>
+        <div class="secao-corpo aberta" id="corpo-empresa">
+          <div class="grid-form">
+            <div class="campo col-2">
+              <label>Logo da Empresa</label>
+              <div class="logo-area">
+                <img id="logo-preview" class="logo-preview" src="" alt="Logo" style="display:none">
+                <label class="btn-upload" id="btn-upload-label">
+                  📎 Enviar logo (PNG/JPG, máx 2MB)
+                  <input type="file" id="logo-input" accept="image/*" onchange="carregarLogo(event)" style="display:none">
+                </label>
+                <button type="button" class="btn-remover-logo" id="btn-remover-logo" onclick="removerLogo()" style="display:none">✕ Remover</button>
+              </div>
+            </div>
+            <div class="campo">
+              <label>Nome da Empresa <span>*</span></label>
+              <input type="text" id="nomeEmpresa" placeholder="Razão social ou nome fantasia">
+              <span class="msg-erro" id="erro-nomeEmpresa"></span>
+            </div>
+            <div class="campo"><label>Telefone</label><input type="text" id="telefone" placeholder="(11) 3333-4444"></div>
+            <div class="campo"><label>WhatsApp</label><input type="text" id="whatsapp" placeholder="(11) 99999-9999"></div>
+            <div class="campo"><label>E-mail</label><input type="email" id="email" placeholder="contato@empresa.com.br"></div>
+            <div class="campo"><label>Site</label><input type="text" id="site" placeholder="www.empresa.com.br"></div>
+            <div class="campo"><label>Cidade</label><input type="text" id="cidade" placeholder="São Paulo"></div>
+            <div class="campo">
+              <label>Estado</label>
+              <select id="estado">
+                <option value="">Selecione</option>
+                <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+                <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+                <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+                <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+                <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+                <option>SP</option><option>SE</option><option>TO</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-acoes" style="margin-top:18px">
+          <button class="btn-salvar" id="btn-salvar-form" onclick="salvarFicha()">✓ Gerar Ficha Técnica</button>
+          <button class="btn-cancelar" onclick="irParaLista()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: VISUALIZAÇÃO -->
+    <div id="view-preview" class="view">
+      <div class="preview-toolbar">
+        <div class="preview-meta">
+          <h2 id="preview-nome-produto">—</h2>
+          <p id="preview-nome-empresa">—</p>
+        </div>
+        <div class="toolbar-acoes">
+          <button class="btn-pdf" onclick="exportarPDF()">⬇ Exportar PDF</button>
+          <button class="btn-imprimir" onclick="window.print()">🖨 Imprimir</button>
+          <button class="btn-editar-toolbar" onclick="editarAtual()">✏️ Editar</button>
+          <button class="btn-cancelar" style="font-size:.8rem" onclick="irParaLista()">← Lista</button>
+        </div>
+      </div>
+      <div class="ficha-wrapper">
+        <div class="ficha-a4" id="ficha-a4"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL CONFIRMAR EXCLUSÃO -->
+<div class="overlay" id="modal-del">
+  <div class="modal">
+    <h3>Excluir Ficha Técnica</h3>
+    <p>Esta ação é permanente e não pode ser desfeita. Deseja continuar?</p>
+    <div class="modal-acoes">
+      <button class="btn-confirm-del" onclick="confirmarExclusao()">Excluir</button>
+      <button class="btn-confirm-cancel" onclick="fecharModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPINNER -->
+<div class="spinner-overlay" id="spinner">
+  <div class="spinner"></div>
+  <p style="font-size:.9rem;color:#475569;font-weight:600">Gerando PDF...</p>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SCRIPT jsPDF (CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+// ── ESTADO ───────────────────────────────────────────────────
+const CHAVE = 'fichas_tecnicas_v2';
+let fichas = carregarStorage();
+let idEditando = null;
+let idExcluindo = null;
+let fichaAtual = null;
+
+function carregarStorage() {
+  try { return JSON.parse(localStorage.getItem(CHAVE) || '[]'); } catch { return []; }
+}
+function salvarStorage() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(fichas)); } catch { mostrarToast('⚠️ Erro ao salvar no navegador'); }
+}
+
+// ── CAMPOS ────────────────────────────────────────────────────
+const CAMPOS = [
+  'nomeProduto','categoria','descricao','composicao','aplicacao','beneficios',
+  'modoDeUso','armazenamento','validade',
+  'cor','odor','aparencia','ph','densidade','solubilidade',
+  'nomeEmpresa','telefone','whatsapp','email','site','cidade','estado'
+];
+let logoBase64 = '';
+
+function lerFormulario() {
+  const d = { logo: logoBase64 };
+  CAMPOS.forEach(k => { d[k] = (document.getElementById(k)?.value || '').trim(); });
+  return d;
+}
+
+function preencherFormulario(dados) {
+  CAMPOS.forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.value = dados[k] || '';
+  });
+  logoBase64 = dados.logo || '';
+  const prev = document.getElementById('logo-preview');
+  const btnRem = document.getElementById('btn-remover-logo');
+  const btnUp = document.getElementById('btn-upload-label');
+  if (logoBase64) {
+    prev.src = logoBase64; prev.style.display = 'block';
+    btnRem.style.display = 'inline'; btnUp.style.display = 'none';
+  } else {
+    prev.style.display = 'none'; btnRem.style.display = 'none'; btnUp.style.display = 'inline-flex';
+  }
+}
+
+function limparFormulario() {
+  CAMPOS.forEach(k => { const el = document.getElementById(k); if (el) el.value = ''; });
+  logoBase64 = '';
+  document.getElementById('logo-preview').style.display = 'none';
+  document.getElementById('btn-remover-logo').style.display = 'none';
+  document.getElementById('btn-upload-label').style.display = 'inline-flex';
+  limparErros();
+}
+
+function limparErros() {
+  ['nomeProduto','categoria','nomeEmpresa'].forEach(k => {
+    const el = document.getElementById(k);
+    const err = document.getElementById('erro-' + k);
+    if (el) el.classList.remove('erro');
+    if (err) err.textContent = '';
+  });
+}
+
+// ── LOGO ──────────────────────────────────────────────────────
+function carregarLogo(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { mostrarToast('⚠️ Logo deve ter no máximo 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    logoBase64 = ev.target.result;
+    const prev = document.getElementById('logo-preview');
+    prev.src = logoBase64; prev.style.display = 'block';
+    document.getElementById('btn-remover-logo').style.display = 'inline';
+    document.getElementById('btn-upload-label').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function removerLogo() {
+  logoBase64 = '';
+  document.getElementById('logo-preview').style.display = 'none';
+  document.getElementById('btn-remover-logo').style.display = 'none';
+  document.getElementById('btn-upload-label').style.display = 'inline-flex';
+  document.getElementById('logo-input').value = '';
+}
+
+// ── SEÇÕES ACCORDION ─────────────────────────────────────────
+function toggleSecao(nome) {
+  const corpo = document.getElementById('corpo-' + nome);
+  const seta  = document.getElementById('seta-' + nome);
+  const aberta = corpo.classList.contains('aberta');
+  corpo.classList.toggle('aberta', !aberta);
+  seta.classList.toggle('aberta', !aberta);
+}
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────────
+function mostrarView(nome) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + nome).classList.add('active');
+  const btnNova = document.getElementById('btn-nova');
+  btnNova.style.display = nome === 'lista' ? 'flex' : 'none';
+  window.scrollTo(0, 0);
+}
+
+function irParaLista() { mostrarView('lista'); renderLista(); }
+
+function irParaFormulario(ficha) {
+  idEditando = ficha ? ficha.id : null;
+  limparFormulario();
+  if (ficha) {
+    preencherFormulario(ficha);
+    document.getElementById('form-titulo').textContent = '✏️ Editar Ficha Técnica';
+    document.getElementById('btn-salvar-form').textContent = '✓ Salvar Alterações';
+  } else {
+    document.getElementById('form-titulo').textContent = '＋ Nova Ficha Técnica';
+    document.getElementById('btn-salvar-form').textContent = '✓ Gerar Ficha Técnica';
+  }
+  mostrarView('form');
+}
+
+function irParaPreview(ficha) {
+  fichaAtual = ficha;
+  document.getElementById('preview-nome-produto').textContent = ficha.nomeProduto || '—';
+  document.getElementById('preview-nome-empresa').textContent = ficha.nomeEmpresa || '—';
+  document.getElementById('ficha-a4').innerHTML = gerarHTMLFicha(ficha);
+  mostrarView('preview');
+}
+
+function editarAtual() {
+  if (fichaAtual) irParaFormulario(fichaAtual);
+}
+
+// ── CRUD ──────────────────────────────────────────────────────
+function validar(d) {
+  let ok = true;
+  if (!d.nomeProduto) { marcarErro('nomeProduto','Obrigatório'); ok = false; }
+  if (!d.categoria)   { marcarErro('categoria','Obrigatório'); ok = false; }
+  if (!d.nomeEmpresa) { marcarErro('nomeEmpresa','Obrigatório'); ok = false; }
+  return ok;
+}
+function marcarErro(k, msg) {
+  const el  = document.getElementById(k);
+  const err = document.getElementById('erro-' + k);
+  if (el) el.classList.add('erro');
+  if (err) err.textContent = msg;
+}
+
+function salvarFicha() {
+  limparErros();
+  const dados = lerFormulario();
+  if (!validar(dados)) { mostrarToast('⚠️ Preencha os campos obrigatórios'); return; }
+  const agora = new Date().toISOString();
+  if (idEditando) {
+    const idx = fichas.findIndex(f => f.id === idEditando);
+    if (idx > -1) {
+      fichas[idx] = { ...fichas[idx], ...dados, atualizadaEm: agora };
+      fichaAtual = fichas[idx];
+    }
+    mostrarToast('✅ Ficha atualizada com sucesso!');
+  } else {
+    const nova = { ...dados, id: gerarId(), criadaEm: agora, atualizadaEm: agora };
+    fichas.unshift(nova);
+    fichaAtual = nova;
+    mostrarToast('✅ Ficha criada com sucesso!');
+  }
+  salvarStorage();
+  irParaPreview(fichaAtual);
+}
+
+function pedirExclusao(id) { idExcluindo = id; document.getElementById('modal-del').classList.add('ativo'); }
+function fecharModal()     { idExcluindo = null; document.getElementById('modal-del').classList.remove('ativo'); }
+function confirmarExclusao() {
+  fichas = fichas.filter(f => f.id !== idExcluindo);
+  salvarStorage(); fecharModal(); mostrarToast('🗑️ Ficha excluída'); renderLista();
+}
+
+function duplicar(id) {
+  const orig = fichas.find(f => f.id === id);
+  if (!orig) return;
+  const agora = new Date().toISOString();
+  const copia = { ...orig, id: gerarId(), nomeProduto: orig.nomeProduto + ' (Cópia)', criadaEm: agora, atualizadaEm: agora };
+  fichas.unshift(copia);
+  salvarStorage(); mostrarToast('📋 Ficha duplicada'); renderLista();
+}
+
+// ── RENDER LISTA ─────────────────────────────────────────────
+function renderLista() {
+  const busca = (document.getElementById('campo-busca')?.value || '').toLowerCase();
+  const filtradas = fichas.filter(f =>
+    !busca ||
+    f.nomeProduto?.toLowerCase().includes(busca) ||
+    f.nomeEmpresa?.toLowerCase().includes(busca) ||
+    f.categoria?.toLowerCase().includes(busca)
+  );
+
+  const grid = document.getElementById('grid-fichas');
+  const empty = document.getElementById('empty-state');
+  const cont = document.getElementById('contador-text');
+
+  cont.textContent = fichas.length > 0
+    ? `${filtradas.length} de ${fichas.length} ficha${fichas.length !== 1 ? 's' : ''}`
+    : '';
+
+  if (fichas.length === 0) { grid.innerHTML = ''; empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+
+  if (filtradas.length === 0) {
+    grid.innerHTML = `<p style="color:#94a3b8;font-size:.88rem;padding:20px 0">Nenhum resultado para "<strong>${busca}</strong>"</p>`;
+    return;
+  }
+
+  grid.innerHTML = filtradas.map(f => {
+    const inicial = f.logo
+      ? `<img src="${f.logo}" alt="logo">`
+      : (f.nomeEmpresa || '?')[0].toUpperCase();
+    const desc = f.descricao ? `<p class="card-desc">${esc(f.descricao)}</p>` : '';
+    const tag  = f.categoria ? `<span class="tag">🏷 ${esc(f.categoria)}</span>` : '';
+    return `
+      <div class="card">
+        <div class="card-topo">
+          <div class="card-inicial">${inicial}</div>
+          <div>
+            <div class="card-nome">${esc(f.nomeProduto) || '<em style="color:#94a3b8">Sem nome</em>'}</div>
+            <div class="card-empresa">${esc(f.nomeEmpresa) || '—'}</div>
+          </div>
+        </div>
+        ${tag ? `<div>${tag}</div>` : ''}
+        ${desc}
+        <div class="card-acoes">
+          <button class="btn-ver" onclick="irParaPreview(fichas.find(f=>f.id==='${f.id}'))">👁 Visualizar</button>
+          <button class="btn-ico" title="Editar" onclick="irParaFormulario(fichas.find(f=>f.id==='${f.id}'))">✏️</button>
+          <button class="btn-ico dup" title="Duplicar" onclick="duplicar('${f.id}')">📋</button>
+          <button class="btn-ico del" title="Excluir" onclick="pedirExclusao('${f.id}')">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── GERAR HTML DA FICHA ───────────────────────────────────────
+function gerarHTMLFicha(f) {
+  const local = [f.cidade, f.estado].filter(Boolean).join(' – ');
+  const fmtData = iso => new Date(iso).toLocaleDateString('pt-BR');
+  const ref = f.id.slice(0, 8).toUpperCase();
+
+  const logoHtml = f.logo
+    ? `<img src="${f.logo}" alt="Logo" style="width:54px;height:54px;object-fit:contain;border-radius:10px;padding:4px">`
+    : `<div class="ft-inicial">${(f.nomeEmpresa||'?')[0].toUpperCase()}</div>`;
+
+  const temFisquim = [f.cor,f.odor,f.aparencia,f.ph,f.densidade,f.solubilidade].some(v=>v?.trim());
+
+  const linhaFQ = (label, val) => val?.trim()
+    ? `<tr><td>${label}</td><td style="font-size:11.5px;color:#334155;padding:6px 10px;border-bottom:1px solid #f1f5f9">${esc(val)}</td></tr>` : '';
+
+  const secao = (titulo, conteudo, cls='') => conteudo?.trim() ? `
+    <div class="ft-secao">
+      <div class="ft-secao-titulo"><div class="ft-acento"></div><span class="ft-secao-label">${titulo}</span><div class="ft-secao-linha"></div></div>
+      <div class="ft-box ${cls}"><p class="ft-texto">${esc(conteudo).replace(/\n/g,'<br>')}</p></div>
+    </div>` : '';
+
+  const infoRodape = [
+    ['Empresa', f.nomeEmpresa], ['Telefone', f.telefone], ['WhatsApp', f.whatsapp],
+    ['E-mail', f.email], ['Site', f.site], ['Localização', local]
+  ].filter(([,v])=>v?.trim())
+   .map(([k,v])=>`<div class="ft-rodape-item"><span class="ft-rodape-chave">${k}:</span><span class="ft-rodape-valor">${esc(v)}</span></div>`)
+   .join('');
+
+  return `
+  <div class="ft-header">
+    <div class="ft-topo">
+      <div class="ft-empresa">
+        ${logoHtml}
+        <div>
+          <div class="ft-fab-label">Fabricante</div>
+          <div class="ft-fab-nome">${esc(f.nomeEmpresa)||'—'}</div>
+          ${local ? `<div class="ft-fab-local">${esc(local)}</div>` : ''}
+        </div>
+      </div>
+      <div class="ft-doc-info">
+        <div class="ft-badge">Ficha Técnica</div>
+        <div class="ft-doc-meta">Emissão: ${fmtData(f.criadaEm)}</div>
+        <div class="ft-doc-ref">Ref.: ${ref}</div>
+      </div>
+    </div>
+    <div class="ft-banner">
+      <div>
+        ${f.categoria?`<div class="ft-categoria">${esc(f.categoria)}</div>`:''}
+        <div class="ft-produto-nome">${esc(f.nomeProduto)||'Sem nome'}</div>
+      </div>
+      ${f.validade?`<div><div class="ft-validade-label">Validade</div><div class="ft-validade-val">${esc(f.validade)}</div></div>`:''}
+    </div>
+  </div>
+
+  ${f.descricao?.trim() ? `
+  <div class="ft-secao">
+    <div class="ft-secao-titulo"><div class="ft-acento"></div><span class="ft-secao-label">Descrição do Produto</span><div class="ft-secao-linha"></div></div>
+    <div class="ft-box"><p class="ft-texto">${esc(f.descricao).replace(/\n/g,'<br>')}</p></div>
+  </div>` : ''}
+
+  ${temFisquim ? `
+  <div class="ft-secao">
+    <div class="ft-secao-titulo"><div class="ft-acento"></div><span class="ft-secao-label">Características Físico-Químicas</span><div class="ft-secao-linha"></div></div>
+    <div class="ft-box">
+      <table class="ft-table">
+        <tbody>
+          ${linhaFQ('Cor', f.cor)}
+          ${linhaFQ('Odor', f.odor)}
+          ${linhaFQ('Aparência', f.aparencia)}
+          ${linhaFQ('pH', f.ph)}
+          ${linhaFQ('Densidade', f.densidade)}
+          ${linhaFQ('Solubilidade', f.solubilidade)}
+        </tbody>
+      </table>
+    </div>
+  </div>` : ''}
+
+  ${(f.composicao?.trim() || f.aplicacao?.trim()) ? `
+  <div class="ft-grid-2">
+    ${f.composicao?.trim() ? `
+    <div class="ft-secao">
+      <div class="ft-secao-titulo"><div class="ft-acento"></div><span class="ft-secao-label">Composição</span><div class="ft-secao-linha"></div></div>
+      <p class="ft-texto">${esc(f.composicao).replace(/\n/g,'<br>')}</p>
+    </div>` : ''}
+    ${f.aplicacao?.trim() ? `
+    <div class="ft-secao">
+      <div class="ft-secao-titulo"><div class="ft-acento"></div><span class="ft-secao-label">Aplicações</span><div class="ft-secao-linha"></div></div>
+      <p class="ft-texto">${esc(f.aplicacao).replace(/\n/g,'<br>')}</p>
+    </div>` : ''}
+  </div>` : ''}
+
+  ${secao('Benefícios', f.beneficios, 'ft-box-verde')}
+  ${secao('Modo de Uso', f.modoDeUso, 'ft-box-azul')}
+  ${f.armazenamento?.trim() ? `
+  <div class="ft-secao">
+    <div class="ft-secao-titulo"><div class="ft-acento"></div><span class="ft-secao-label">Armazenamento e Conservação</span><div class="ft-secao-linha"></div></div>
+    <p class="ft-texto">${esc(f.armazenamento).replace(/\n/g,'<br>')}</p>
+  </div>` : ''}
+
+  <div class="ft-rodape">
+    <div class="ft-rodape-box">
+      <div class="ft-rodape-titulo">Informações do Fabricante</div>
+      <div class="ft-rodape-grid">${infoRodape}</div>
+      <div class="ft-assinatura">
+        <span>Emitido em ${fmtData(f.criadaEm)} · Ref. ${ref}</span>
+        <span>Gerador de Fichas Técnicas Profissional</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── EXPORTAR PDF ─────────────────────────────────────────────
+async function exportarPDF() {
+  const el = document.getElementById('ficha-a4');
+  if (!el || !fichaAtual) return;
+
+  const spinner = document.getElementById('spinner');
+  spinner.classList.add('ativo');
+
+  try {
+    const canvas = await html2canvas(el, {
+      scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const pw = pdf.internal.pageSize.getWidth();
+    const ph = pdf.internal.pageSize.getHeight();
+    const ratio = pw / canvas.width;
+    const imgH = canvas.height * ratio;
+    const img = canvas.toDataURL('image/jpeg', 0.92);
+
+    let y = 0;
+    while (y < imgH) {
+      if (y > 0) pdf.addPage();
+      pdf.addImage(img, 'JPEG', 0, -y, pw, imgH);
+      y += ph;
+    }
+
+    const nome = (fichaAtual.nomeProduto || 'ficha-tecnica').replace(/[^a-zA-Z0-9]/g,'_');
+    pdf.save(nome + '.pdf');
+    mostrarToast('✅ PDF exportado com sucesso!');
+  } catch(e) {
+    mostrarToast('⚠️ Erro ao gerar PDF. Tente imprimir.');
+  } finally {
+    spinner.classList.remove('ativo');
+  }
+}
+
+// ── UTILITÁRIOS ───────────────────────────────────────────────
+function gerarId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mostrarToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Fechar modal clicando fora
+document.getElementById('modal-del').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModal();
+});
+
+// ── INIT ──────────────────────────────────────────────────────
+renderLista();
+mostrarView('lista');
+</script>
+</body>
+</html>
